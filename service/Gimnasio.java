@@ -1,20 +1,28 @@
 // ============================================================
-// CLASE: Gimnasio
-// ARCHIVO: Gimnasio.java
+// PAQUETE: service (servicio)
+// Contiene la lógica del negocio: operaciones sobre los datos.
+// Gimnasio sabe QUÉ hacer con los socios, pero no cómo mostrarlos.
 // ============================================================
-// ¿Por qué existe esta clase?
-//   Es el "cerebro" del sistema. Contiene la lista de socios y
-//   todos los métodos que representan las operaciones del negocio:
-//   registrar, buscar, modificar, eliminar, etc.
-//   Se llama también "capa de servicio" o "lógica de negocio".
-//
-// Esta clase NO sabe nada del menú ni del teclado.
-// Solo recibe datos, opera con ellos y devuelve resultados.
-// Eso la hace reutilizable y fácil de testear.
-// ============================================================
+
+package service;
+
+// "import" (importar): trae una clase de otro paquete para poder usarla aquí.
+// Como hacer "usar" en PSeInt para incluir una librería.
+// Sin este import, Java no sabría qué es "Socio".
+import model.Socio;
 
 import java.util.ArrayList;  // ArrayList: lista dinámica (puede crecer o achicarse)
 import java.util.Comparator; // Comparator (comparador): sirve para ordenar listas
+
+// ============================================================
+// CLASE: Gimnasio
+// ============================================================
+// ¿Por qué existe esta clase?
+//   Es el "cerebro" del sistema. Contiene la lista de socios y
+//   todos los métodos que representan las operaciones del negocio.
+//   NO sabe nada del menú ni del teclado.
+//   Solo recibe datos, opera con ellos y devuelve resultados.
+// ============================================================
 
 public class Gimnasio {
 
@@ -22,13 +30,12 @@ public class Gimnasio {
     // ATRIBUTOS
     // ----------------------------------------------------------
 
-    // ArrayList<Socio> (Lista de Socios)
-    // Es como un vector en PSeInt, pero sin tamaño fijo.
+    // ArrayList<Socio> (Lista de Socios): lista dinámica sin tamaño fijo.
     // El <Socio> entre ángulos indica que SOLO puede guardar objetos Socio.
     // Eso se llama "genérico" (generic) o "tipo parametrizado".
     private ArrayList<Socio> socios;
 
-    // Contador que asigna IDs únicos automáticamente (como autoincrement en bases de datos)
+    // Contador que asigna IDs únicos automáticamente
     private int contadorId;
 
     // ----------------------------------------------------------
@@ -43,23 +50,15 @@ public class Gimnasio {
     // ==========================================================
     // FUNCIONALIDAD 1: ALTA DE SOCIO
     // ==========================================================
-    // Crea un nuevo Socio y lo agrega a la lista.
 
     public void agregarSocio(String nombre, int edad, String plan) {
-        // Primero validamos que el plan sea uno de los permitidos
         if (!esPlanValido(plan)) {
             System.out.println("  [X] Plan invalido. Use: BASICO, INTERMEDIO o PREMIUM");
-            return; // return sin valor: sale del método inmediatamente (como Retornar en PSeInt)
+            return;
         }
-
-        // "new Socio(...)" invoca el constructor de Socio y crea el objeto en memoria
         Socio nuevoSocio = new Socio(contadorId, nombre, edad, plan);
-
-        // .add() (agregar): agrega el objeto al final de la lista
-        socios.add(nuevoSocio);
-
-        contadorId++; // Incrementa para que el próximo socio tenga un ID diferente
-
+        socios.add(nuevoSocio); // .add() (agregar): agrega el objeto al final de la lista
+        contadorId++;
         System.out.println("  [OK] Socio registrado con ID: " + nuevoSocio.getId());
     }
 
@@ -67,26 +66,24 @@ public class Gimnasio {
     // FUNCIONALIDAD 2: BUSCAR SOCIO POR ID
     // ==========================================================
 
-    // Método PRIVADO (private) de búsqueda interna.
+    // Método PRIVADO de búsqueda interna.
     // Devuelve el objeto Socio si lo encuentra, o null si no existe.
-    // "null" (nulo) en Java significa "ningún objeto / vacío".
-    // Otros métodos de esta clase lo usan como herramienta interna.
+    // "null" (nulo): significa "ningún objeto / vacío".
     private Socio buscarPorId(int id) {
         // for-each (para cada): recorre todos los elementos de la lista
         // Equivalente en PSeInt: Para Cada socio En socios Hacer
         for (Socio socio : socios) {
             if (socio.getId() == id) {
-                return socio; // Encontrado: devuelve el objeto
+                return socio;
             }
         }
-        return null; // Recorrió toda la lista y no encontró ninguno
+        return null;
     }
 
     // Método PÚBLICO que muestra el resultado en consola
     public void buscarSocioPorId(int id) {
         Socio socio = buscarPorId(id);
-
-        if (socio == null) { // Si es null, no existe
+        if (socio == null) {
             System.out.println("  [X] No se encontro ningun socio con ID: " + id);
         } else {
             System.out.println(socio); // Llama automáticamente al toString() de Socio
@@ -96,8 +93,6 @@ public class Gimnasio {
     // ==========================================================
     // FUNCIONALIDAD 3: MODIFICAR SOCIO
     // ==========================================================
-    // Tres métodos separados, uno por campo. Esto respeta el principio
-    // de que cada método tiene una sola responsabilidad clara.
 
     public void modificarNombre(int id, String nuevoNombre) {
         Socio socio = buscarPorId(id);
@@ -150,8 +145,7 @@ public class Gimnasio {
             System.out.println("  [X] No se encontro el socio con ID: " + id);
             return;
         }
-        // .remove(objeto): elimina ese objeto específico de la lista
-        // La lista se reorganiza sola (no quedan huecos)
+        // .remove(objeto): elimina ese objeto de la lista. La lista se reorganiza sola.
         socios.remove(socio);
         System.out.println("  [OK] Socio '" + socio.getNombre() + "' eliminado correctamente.");
     }
@@ -215,13 +209,11 @@ public class Gimnasio {
 
         // printf (imprimir con formato): permite alinear texto en columnas
         // %-5s  -> texto alineado a la IZQUIERDA en 5 caracteres
-        // %-20s -> texto alineado a la IZQUIERDA en 20 caracteres
-        // %n    -> salto de línea (equivalente a \n pero multiplataforma)
+        // %n    -> salto de línea multiplataforma
         System.out.printf("  %-5s %-20s %-5s %-12s %-8s %-12s%n",
                           "ID", "NOMBRE", "EDAD", "PLAN", "ASIST.", "CUOTA");
         System.out.println("  " + "-".repeat(66));
 
-        // for-each: recorre cada socio de la lista
         for (Socio socio : socios) {
             System.out.printf("  %-5d %-20s %-5d %-12s %-8d %-12s%n",
                     socio.getId(),
@@ -272,12 +264,11 @@ public class Gimnasio {
         }
 
         // Creamos una COPIA de la lista para no alterar el orden original
-        // new ArrayList<>(socios) → copia todos los elementos en una nueva lista
         ArrayList<Socio> ranking = new ArrayList<>(socios);
 
         // .sort() (ordenar): ordena la lista según un criterio que le indicamos
-        // Comparator.comparingInt() (comparador por entero): compara por un campo numérico
-        // Socio::getAsistencia → "referencia a método" (method reference), equivale a s -> s.getAsistencia()
+        // Comparator.comparingInt(): compara por un campo numérico
+        // Socio::getAsistencia → "referencia a método" (method reference)
         // .reversed() (invertido): ordena de MAYOR a MENOR
         ranking.sort(Comparator.comparingInt(Socio::getAsistencia).reversed());
 
@@ -286,14 +277,10 @@ public class Gimnasio {
         System.out.println("  " + "-".repeat(52));
 
         // for clásico con índice: usamos "i" para mostrar la posición en el ranking
-        // int i = 0 → variable inicial
-        // i < ranking.size() → condición de continuación
-        // i++ → incremento al final de cada repetición
         for (int i = 0; i < ranking.size(); i++) {
-            // .get(i) (obtener en posición i): accede al elemento por índice (0, 1, 2...)
-            Socio socio = ranking.get(i);
+            Socio socio = ranking.get(i); // .get(i) (obtener): accede al elemento por posición
             System.out.printf("  %-5d %-20s %-12s %-10d%n",
-                    (i + 1),              // Posición: empieza en 1 (no en 0)
+                    (i + 1),
                     socio.getNombre(),
                     socio.getPlan(),
                     socio.getAsistencia());
@@ -304,9 +291,7 @@ public class Gimnasio {
     // ----------------------------------------------------------
     // MÉTODO PRIVADO AUXILIAR: esPlanValido
     // ----------------------------------------------------------
-    // Verifica si el plan ingresado es uno de los tres permitidos.
-    // IMPORTANTE: En Java, los String (cadenas de texto) NUNCA se comparan
-    // con == (eso compara la dirección en memoria, no el contenido).
+    // IMPORTANTE: los String NUNCA se comparan con ==.
     // Siempre se usa .equals() (igual a) para comparar texto.
 
     private boolean esPlanValido(String plan) {

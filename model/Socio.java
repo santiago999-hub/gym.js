@@ -1,6 +1,15 @@
 // ============================================================
+// PAQUETE: model (modelo)
+// Contiene las clases que representan entidades del mundo real.
+// Socio es un "modelo de datos": define qué ES un socio.
+// ============================================================
+
+// "package" (paquete): le dice a Java en qué carpeta vive este archivo.
+// DEBE coincidir exactamente con el nombre de la carpeta.
+package model;
+
+// ============================================================
 // CLASE: Socio
-// ARCHIVO: Socio.java
 // ============================================================
 // ¿Por qué existe esta clase?
 //   En POO (Programación Orientada a Objetos), cada "cosa del mundo real"
@@ -43,13 +52,13 @@ public class Socio {
         // "this" (este/este objeto): distingue el atributo del parámetro
         // cuando tienen el mismo nombre. this.nombre = el atributo,
         // nombre (sin this) = el parámetro recibido.
-        this.id        = id;
-        this.nombre    = nombre;
-        this.edad      = edad;
-        this.plan      = plan.toUpperCase(); // toUpperCase() (a mayúsculas): normaliza el texto
-        this.asistencia = 0;                 // Al inscribirse comienza en 0 visitas
-        this.cuotaAlDia = true;              // Al inscribirse se asume que pagó
-        this.rutina    = asignarRutina(this.plan); // La rutina se asigna según el plan
+        this.id         = id;
+        this.nombre     = nombre;
+        this.edad       = edad;
+        this.plan       = plan.toUpperCase(); // toUpperCase() (a mayúsculas): normaliza el texto
+        this.asistencia = 0;                  // Al inscribirse comienza en 0 visitas
+        this.cuotaAlDia = true;               // Al inscribirse se asume que pagó
+        this.rutina     = asignarRutina(this.plan); // La rutina se asigna según el plan
     }
 
     // ----------------------------------------------------------
@@ -104,7 +113,6 @@ public class Socio {
     }
 
     public void setEdad(int edad) {
-        // Validación: no permitir edades imposibles
         if (edad > 0 && edad < 120) {
             this.edad = edad;
         }
@@ -116,7 +124,7 @@ public class Socio {
     }
 
     public void setPlan(String plan) {
-        this.plan  = plan.toUpperCase();
+        this.plan   = plan.toUpperCase();
         this.rutina = asignarRutina(this.plan); // Al cambiar plan, la rutina se actualiza sola
     }
 
@@ -162,13 +170,13 @@ public class Socio {
         String estadoCuota = cuotaAlDia ? "Al dia [OK]" : "PENDIENTE [DEUDA]";
 
         return "╔══════════════════════════════════════════╗\n"
-             + "  ID        : " + id              + "\n"
-             + "  Nombre    : " + nombre          + "\n"
-             + "  Edad      : " + edad            + " anos\n"
-             + "  Plan      : " + plan            + "\n"
-             + "  Asistencia: " + asistencia      + " visitas\n"
-             + "  Cuota     : " + estadoCuota     + "\n"
-             + "  Rutina    : " + rutina          + "\n"
+             + "  ID        : " + id          + "\n"
+             + "  Nombre    : " + nombre      + "\n"
+             + "  Edad      : " + edad        + " anos\n"
+             + "  Plan      : " + plan        + "\n"
+             + "  Asistencia: " + asistencia  + " visitas\n"
+             + "  Cuota     : " + estadoCuota + "\n"
+             + "  Rutina    : " + rutina      + "\n"
              + "╚══════════════════════════════════════════╝";
     }
 }
