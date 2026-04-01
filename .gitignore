@@ -1,0 +1,8 @@
+# Archivos compilados de Java (.class son el bytecode generado por javac)
+# No los subimos al repositorio: se generan automáticamente al compilar
+*.class
+
+# Carpetas de IDEs (entornos de desarrollo)
+.idea/
+*.iml
+.vscode/
