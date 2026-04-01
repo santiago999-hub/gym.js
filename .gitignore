@@ -2,6 +2,10 @@
 # No los subimos al repositorio: se generan automáticamente al compilar
 *.class
 
+# Archivo de datos CSV: cada usuario tiene su propia base de datos local
+# No subimos datos personales al repositorio (buena práctica de privacidad)
+socios.csv
+
 # Carpetas de IDEs (entornos de desarrollo)
 .idea/
 *.iml

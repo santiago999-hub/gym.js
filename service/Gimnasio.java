@@ -10,6 +10,7 @@ package service;
 // Como hacer "usar" en PSeInt para incluir una librería.
 // Sin este import, Java no sabría qué es "Socio".
 import model.Socio;
+import persistence.GestorCSV; // GestorCSV: nuestra clase para leer y escribir el archivo CSV
 
 import java.util.ArrayList;  // ArrayList: lista dinámica (puede crecer o achicarse)
 import java.util.Comparator; // Comparator (comparador): sirve para ordenar listas
@@ -43,8 +44,15 @@ public class Gimnasio {
     // ----------------------------------------------------------
 
     public Gimnasio() {
-        socios     = new ArrayList<>(); // new ArrayList<>(): crea la lista vacía en memoria
-        contadorId = 1;                 // Los IDs comienzan desde 1
+        // Al iniciar, intentamos cargar los datos del archivo CSV.
+        // Si el archivo no existe (primera vez), devuelve una lista vacía.
+        socios = GestorCSV.cargar();
+
+        // El ID del próximo socio nuevo = ID más alto que ya existe + 1
+        // Así nunca repetimos IDs aunque abramos y cerremos el programa.
+        contadorId = GestorCSV.obtenerMaxId(socios) + 1;
+
+        System.out.println("  [i] Sistema listo. Socios cargados: " + socios.size());
     }
 
     // ==========================================================
@@ -57,8 +65,9 @@ public class Gimnasio {
             return;
         }
         Socio nuevoSocio = new Socio(contadorId, nombre, edad, plan);
-        socios.add(nuevoSocio); // .add() (agregar): agrega el objeto al final de la lista
+        socios.add(nuevoSocio);
         contadorId++;
+        GestorCSV.guardar(socios); // Guardamos en disco inmediatamente después de cada cambio
         System.out.println("  [OK] Socio registrado con ID: " + nuevoSocio.getId());
     }
 
@@ -102,6 +111,7 @@ public class Gimnasio {
         }
         String anterior = socio.getNombre();
         socio.setNombre(nuevoNombre);
+        GestorCSV.guardar(socios);
         System.out.println("  [OK] Nombre actualizado: " + anterior + " -> " + nuevoNombre);
     }
 
@@ -116,6 +126,7 @@ public class Gimnasio {
             return;
         }
         socio.setEdad(nuevaEdad);
+        GestorCSV.guardar(socios);
         System.out.println("  [OK] Edad actualizada a: " + nuevaEdad + " anos.");
     }
 
@@ -130,7 +141,8 @@ public class Gimnasio {
             return;
         }
         String anterior = socio.getPlan();
-        socio.setPlan(nuevoPlan); // setPlan también actualiza la rutina automáticamente
+        socio.setPlan(nuevoPlan);
+        GestorCSV.guardar(socios);
         System.out.println("  [OK] Plan actualizado: " + anterior + " -> " + nuevoPlan.toUpperCase());
         System.out.println("  [OK] Rutina actualizada automaticamente.");
     }
@@ -147,6 +159,7 @@ public class Gimnasio {
         }
         // .remove(objeto): elimina ese objeto de la lista. La lista se reorganiza sola.
         socios.remove(socio);
+        GestorCSV.guardar(socios);
         System.out.println("  [OK] Socio '" + socio.getNombre() + "' eliminado correctamente.");
     }
 
@@ -161,6 +174,7 @@ public class Gimnasio {
             return;
         }
         socio.incrementarAsistencia();
+        GestorCSV.guardar(socios);
         System.out.println("  [OK] Asistencia registrada para '" + socio.getNombre()
                          + "'. Total de visitas: " + socio.getAsistencia());
     }
@@ -189,7 +203,7 @@ public class Gimnasio {
             return;
         }
         socio.setCuotaAlDia(estado);
-        // Operador ternario: condicion ? "valorSiTrue" : "valorSiFalse"
+        GestorCSV.guardar(socios);
         String texto = estado ? "AL DIA" : "PENDIENTE";
         System.out.println("  [OK] Cuota de '" + socio.getNombre() + "' marcada como: " + texto);
     }
