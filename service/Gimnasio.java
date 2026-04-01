@@ -10,7 +10,8 @@ package service;
 // Como hacer "usar" en PSeInt para incluir una librería.
 // Sin este import, Java no sabría qué es "Socio".
 import model.Socio;
-import persistence.GestorCSV; // GestorCSV: nuestra clase para leer y escribir el archivo CSV
+import model.Plan;           // Plan: el enum que reemplaza al String "BASICO"/"INTERMEDIO"/"PREMIUM"
+import persistence.GestorCSV;
 
 import java.util.ArrayList;  // ArrayList: lista dinámica (puede crecer o achicarse)
 import java.util.Comparator; // Comparator (comparador): sirve para ordenar listas
@@ -59,15 +60,19 @@ public class Gimnasio {
     // FUNCIONALIDAD 1: ALTA DE SOCIO
     // ==========================================================
 
-    public void agregarSocio(String nombre, int edad, String plan) {
-        if (!esPlanValido(plan)) {
-            System.out.println("  [X] Plan invalido. Use: BASICO, INTERMEDIO o PREMIUM");
+    public void agregarSocio(String nombre, int edad, String planTexto) {
+        // Plan.desdeCadena() convierte el texto del usuario al enum.
+        // Si el texto no es válido, devuelve null.
+        Plan plan = Plan.desdeCadena(planTexto);
+        if (plan == null) {
+            System.out.println("  [X] Plan invalido. Opciones: " + Plan.listarOpciones());
             return;
         }
-        Socio nuevoSocio = new Socio(contadorId, nombre, edad, plan);
+        // Ya no pasamos el texto: pasamos plan.name() que es el nombre garantizado del enum
+        Socio nuevoSocio = new Socio(contadorId, nombre, edad, plan.name());
         socios.add(nuevoSocio);
         contadorId++;
-        GestorCSV.guardar(socios); // Guardamos en disco inmediatamente después de cada cambio
+        GestorCSV.guardar(socios);
         System.out.println("  [OK] Socio registrado con ID: " + nuevoSocio.getId());
     }
 
@@ -130,9 +135,10 @@ public class Gimnasio {
         System.out.println("  [OK] Edad actualizada a: " + nuevaEdad + " anos.");
     }
 
-    public void modificarPlan(int id, String nuevoPlan) {
-        if (!esPlanValido(nuevoPlan)) {
-            System.out.println("  [X] Plan invalido. Use: BASICO, INTERMEDIO o PREMIUM");
+    public void modificarPlan(int id, String planTexto) {
+        Plan nuevoPlan = Plan.desdeCadena(planTexto);
+        if (nuevoPlan == null) {
+            System.out.println("  [X] Plan invalido. Opciones: " + Plan.listarOpciones());
             return;
         }
         Socio socio = buscarPorId(id);
@@ -140,10 +146,10 @@ public class Gimnasio {
             System.out.println("  [X] No se encontro el socio con ID: " + id);
             return;
         }
-        String anterior = socio.getPlan();
-        socio.setPlan(nuevoPlan);
+        String anterior = socio.getPlan().name();
+        socio.setPlan(nuevoPlan.name());
         GestorCSV.guardar(socios);
-        System.out.println("  [OK] Plan actualizado: " + anterior + " -> " + nuevoPlan.toUpperCase());
+        System.out.println("  [OK] Plan actualizado: " + anterior + " -> " + nuevoPlan.name());
         System.out.println("  [OK] Rutina actualizada automaticamente.");
     }
 
@@ -233,7 +239,7 @@ public class Gimnasio {
                     socio.getId(),
                     socio.getNombre(),
                     socio.getEdad(),
-                    socio.getPlan(),
+                    socio.getPlan().name(), // .name() convierte el enum a "BASICO", "PREMIUM", etc.
                     socio.getAsistencia(),
                     socio.isCuotaAlDia() ? "Al dia [OK]" : "PENDIENTE");
         }
@@ -254,7 +260,7 @@ public class Gimnasio {
             return;
         }
         System.out.println("\n  ======== RUTINA DE " + socio.getNombre().toUpperCase() + " ========");
-        System.out.println("  Plan   : " + socio.getPlan());
+        System.out.println("  Plan   : " + socio.getPlan().getDescripcion()); // ej: "Plan Premium"
         System.out.println("  Rutina : " + socio.getRutina());
         System.out.println();
     }
@@ -296,20 +302,15 @@ public class Gimnasio {
             System.out.printf("  %-5d %-20s %-12s %-10d%n",
                     (i + 1),
                     socio.getNombre(),
-                    socio.getPlan(),
+                    socio.getPlan().name(), // mostramos el nombre del enum como texto
                     socio.getAsistencia());
         }
         System.out.println("  " + "-".repeat(52) + "\n");
     }
 
     // ----------------------------------------------------------
-    // MÉTODO PRIVADO AUXILIAR: esPlanValido
+    // NOTA: esPlanValido() fue ELIMINADO.
+    // Con el enum Plan, la validación la hace Plan.desdeCadena().
+    // Si devuelve null, el texto no era válido. Simple y seguro.
     // ----------------------------------------------------------
-    // IMPORTANTE: los String NUNCA se comparan con ==.
-    // Siempre se usa .equals() (igual a) para comparar texto.
-
-    private boolean esPlanValido(String plan) {
-        String p = plan.toUpperCase();
-        return p.equals("BASICO") || p.equals("INTERMEDIO") || p.equals("PREMIUM");
-    }
 }

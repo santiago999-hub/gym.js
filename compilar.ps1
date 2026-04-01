@@ -12,11 +12,12 @@ $jdkBin = "$env:USERPROFILE\.vscode\extensions\redhat.java-1.53.0-win32-x64\jre\
 Write-Host "`n  Compilando proyecto..." -ForegroundColor Cyan
 
 # Compilar en orden de dependencias:
-#   1. model      (Socio, sin dependencias externas)
-#   2. persistence (GestorCSV, depende de model)
-#   3. service    (Gimnasio, depende de model y persistence)
-#   4. ui         (Main, depende de service)
-& "$jdkBin\javac.exe" model/Socio.java persistence/GestorCSV.java service/Gimnasio.java ui/Main.java
+#   1. model/Plan.java     (enum de planes, sin dependencias)
+#   2. model/Socio.java    (usa Plan)
+#   3. persistence/        (usa Socio)
+#   4. service/            (usa Socio, Plan y GestorCSV)
+#   5. ui/                 (usa Gimnasio y Plan)
+& "$jdkBin\javac.exe" model/Plan.java model/Socio.java persistence/GestorCSV.java service/Gimnasio.java ui/Main.java
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "  [OK] Compilacion exitosa`n" -ForegroundColor Green

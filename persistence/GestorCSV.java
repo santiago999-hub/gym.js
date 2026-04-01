@@ -74,7 +74,7 @@ public class GestorCSV {
                 String linea = socio.getId()
                         + SEPARADOR + socio.getNombre()
                         + SEPARADOR + socio.getEdad()
-                        + SEPARADOR + socio.getPlan()
+                        + SEPARADOR + socio.getPlan().name() // .name() convierte Plan.PREMIUM → "PREMIUM"
                         + SEPARADOR + socio.getAsistencia()
                         + SEPARADOR + socio.isCuotaAlDia(); // true o false como texto
 

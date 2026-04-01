@@ -8,6 +8,8 @@
 // DEBE coincidir exactamente con el nombre de la carpeta.
 package model;
 
+// import no necesario: Plan está en el mismo paquete "model"
+
 // ============================================================
 // CLASE: Socio
 // ============================================================
@@ -35,10 +37,9 @@ public class Socio {
     private int id;              // Número único que identifica al socio
     private String nombre;       // Nombre completo del socio
     private int edad;            // Edad del socio en años
-    private String plan;         // Plan contratado: "BASICO", "INTERMEDIO" o "PREMIUM"
+    private Plan plan;           // Plan contratado: ahora es de tipo Plan (enum), no String
     private int asistencia;      // Cantidad de veces que asistió al gimnasio
     private boolean cuotaAlDia;  // boolean (booleano): true = pagó / false = debe
-    private String rutina;       // Descripción de la rutina asignada según el plan
 
     // ----------------------------------------------------------
     // CONSTRUCTOR (Constructor)
@@ -48,41 +49,25 @@ public class Socio {
     // y los guarda dentro del objeto que se está creando.
     // "public" (público): cualquier clase puede crear un Socio.
 
-    public Socio(int id, String nombre, int edad, String plan) {
+    public Socio(int id, String nombre, int edad, String planTexto) {
         // "this" (este/este objeto): distingue el atributo del parámetro
         // cuando tienen el mismo nombre. this.nombre = el atributo,
         // nombre (sin this) = el parámetro recibido.
         this.id         = id;
         this.nombre     = nombre;
         this.edad       = edad;
-        this.plan       = plan.toUpperCase(); // toUpperCase() (a mayúsculas): normaliza el texto
-        this.asistencia = 0;                  // Al inscribirse comienza en 0 visitas
-        this.cuotaAlDia = true;               // Al inscribirse se asume que pagó
-        this.rutina     = asignarRutina(this.plan); // La rutina se asigna según el plan
+        // Plan.desdeCadena(): convierte el String "BASICO" → Plan.BASICO
+        // Si el texto es inválido, desdeCadena() devuelve null.
+        // En ese caso usamos Plan.BASICO como valor por defecto.
+        Plan planConvertido = Plan.desdeCadena(planTexto);
+        this.plan       = (planConvertido != null) ? planConvertido : Plan.BASICO;
+        this.asistencia = 0;    // Al inscribirse comienza en 0 visitas
+        this.cuotaAlDia = true; // Al inscribirse se asume que pagó
     }
 
-    // ----------------------------------------------------------
-    // MÉTODO PRIVADO: asignarRutina
-    // ----------------------------------------------------------
-    // Es "private" porque es lógica interna de la clase.
-    // Nadie de afuera necesita llamar a este método directamente.
-    // Se llama solo desde el constructor y desde setPlan().
-
-    private String asignarRutina(String plan) {
-        // switch (interruptor/selector): evalúa el valor de "plan"
-        // y ejecuta el bloque del "case" que coincida.
-        // Es equivalente al Segun/Caso en PSeInt.
-        switch (plan) {
-            case "BASICO":
-                return "Cardio + Elongacion (30 min) | 3 veces por semana";
-            case "INTERMEDIO":
-                return "Pesas + Cardio (60 min) | 4 veces por semana";
-            case "PREMIUM":
-                return "Pesas + Cardio + Funcional (90 min) | 5 veces por semana";
-            default: // default (por defecto): si ningún case coincide
-                return "Rutina personalizada - consultar con el entrenador";
-        }
-    }
+    // NOTA: el método privado asignarRutina() ya no existe.
+    // Ahora la rutina vive DENTRO del enum Plan (en el atributo "rutina" de cada constante).
+    // Esto es mejor porque la info de cada plan está en un solo lugar.
 
     // ----------------------------------------------------------
     // GETTERS (Obtenedores) y SETTERS (Establecedores)
@@ -119,13 +104,18 @@ public class Socio {
     }
 
     // --- PLAN ---
-    public String getPlan() {
+    // El getter ahora devuelve el objeto Plan (enum), no un String.
+    public Plan getPlan() {
         return plan;
     }
 
-    public void setPlan(String plan) {
-        this.plan   = plan.toUpperCase();
-        this.rutina = asignarRutina(this.plan); // Al cambiar plan, la rutina se actualiza sola
+    public void setPlan(String planTexto) {
+        // Convertimos el texto del usuario al enum correspondiente
+        Plan planConvertido = Plan.desdeCadena(planTexto);
+        if (planConvertido != null) {
+            this.plan = planConvertido;
+        }
+        // La rutina no necesita actualizarse: plan.getRutina() siempre devuelve la correcta
     }
 
     // --- ASISTENCIA ---
@@ -150,8 +140,11 @@ public class Socio {
     }
 
     // --- RUTINA ---
+    // Ya no guardamos rutina como atributo separado.
+    // La obtenemos directamente del enum: plan.getRutina()
+    // Así siempre está sincronizada con el plan, sin riesgo de inconsistencia.
     public String getRutina() {
-        return rutina;
+        return plan.getRutina();
     }
 
     // ----------------------------------------------------------
@@ -170,13 +163,13 @@ public class Socio {
         String estadoCuota = cuotaAlDia ? "Al dia [OK]" : "PENDIENTE [DEUDA]";
 
         return "╔══════════════════════════════════════════╗\n"
-             + "  ID        : " + id          + "\n"
-             + "  Nombre    : " + nombre      + "\n"
-             + "  Edad      : " + edad        + " anos\n"
-             + "  Plan      : " + plan        + "\n"
-             + "  Asistencia: " + asistencia  + " visitas\n"
-             + "  Cuota     : " + estadoCuota + "\n"
-             + "  Rutina    : " + rutina      + "\n"
+             + "  ID        : " + id                    + "\n"
+             + "  Nombre    : " + nombre                + "\n"
+             + "  Edad      : " + edad                  + " anos\n"
+             + "  Plan      : " + plan.getDescripcion() + "\n" // plan.getDescripcion() → "Plan Premium"
+             + "  Asistencia: " + asistencia            + " visitas\n"
+             + "  Cuota     : " + estadoCuota           + "\n"
+             + "  Rutina    : " + plan.getRutina()      + "\n" // plan.getRutina() viene del enum
              + "╚══════════════════════════════════════════╝";
     }
 }

@@ -10,6 +10,7 @@ package ui;
 // Importamos Gimnasio desde el paquete "service"
 // Sin este import, Java no sabría qué es "Gimnasio".
 import service.Gimnasio;
+import model.Plan; // Plan: el enum que define los planes válidos del gimnasio
 
 import java.util.Scanner; // Scanner (escaner): permite leer datos del teclado
 
@@ -64,7 +65,7 @@ public class Main {
                     String nombre = scanner.nextLine();
                     System.out.print("  Edad: ");
                     int edad = leerEntero(scanner);
-                    System.out.println("  Planes disponibles: BASICO | INTERMEDIO | PREMIUM");
+                    System.out.println("  Planes disponibles: " + Plan.listarOpciones()); // muestra automaticamente los planes del enum
                     System.out.print("  Plan: ");
                     String plan = scanner.nextLine().toUpperCase();
                     gimnasio.agregarSocio(nombre, edad, plan);
@@ -198,7 +199,7 @@ public class Main {
                 gimnasio.modificarEdad(id, nuevaEdad);
                 break;
             case 3:
-                System.out.println("  Planes: BASICO | INTERMEDIO | PREMIUM");
+                System.out.println("  Planes: " + Plan.listarOpciones()); // dinámico: si habés más planes al enum, aquí aparecen solos
                 System.out.print("  Nuevo plan: ");
                 String nuevoPlan = scanner.nextLine();
                 gimnasio.modificarPlan(id, nuevoPlan);
