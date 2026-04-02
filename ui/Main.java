@@ -65,9 +65,9 @@ public class Main {
                     String nombre = scanner.nextLine();
                     System.out.print("  Edad: ");
                     int edad = leerEntero(scanner);
-                    System.out.println("  Planes disponibles: " + Plan.listarOpciones()); // muestra automaticamente los planes del enum
-                    System.out.print("  Plan: ");
-                    String plan = scanner.nextLine().toUpperCase();
+                    // elegirPlan() muestra el submenu numerico y devuelve el nombre del plan
+                    // Los datos de nombre y edad NO se pierden si el usuario elige mal
+                    String plan = elegirPlan(scanner);
                     gimnasio.agregarSocio(nombre, edad, plan);
                     break; // break (salir): evita que Java siga ejecutando los siguientes casos
 
@@ -199,9 +199,8 @@ public class Main {
                 gimnasio.modificarEdad(id, nuevaEdad);
                 break;
             case 3:
-                System.out.println("  Planes: " + Plan.listarOpciones()); // dinámico: si habés más planes al enum, aquí aparecen solos
-                System.out.print("  Nuevo plan: ");
-                String nuevoPlan = scanner.nextLine();
+                // elegirPlan() reutilizamos el mismo submenu que en el alta
+                String nuevoPlan = elegirPlan(scanner);
                 gimnasio.modificarPlan(id, nuevoPlan);
                 break;
             default:
@@ -236,6 +235,46 @@ public class Main {
                 break;
             default:
                 System.out.println("  [X] Opcion invalida.");
+        }
+    }
+
+    // ==========================================================
+    // MÉTODO: elegirPlan (submenú de selección de plan)
+    // ==========================================================
+    // Muestra las opciones numeradas y repite el menú si el usuario
+    // elige un número que no existe. Los datos ya ingresados (nombre,
+    // edad) NO se pierden porque este método solo pregunta por el plan.
+    //
+    // Plan.values() devuelve el array [BASICO, INTERMEDIO, PREMIUM]
+    // Recorremos ese array para mostrar y para convertir el número elegido
+    // al nombre del plan correspondiente ("BASICO", "INTERMEDIO", etc.)
+
+    private static String elegirPlan(Scanner scanner) {
+        Plan[] planes = Plan.values(); // Plan.values(): array con todas las constantes del enum
+
+        // do-while: repite hasta que el usuario elija un número válido
+        while (true) {
+            System.out.println("  Seleccione el plan:");
+
+            // Mostrar cada plan numerado usando el índice del array
+            // planes[0] = BASICO, planes[1] = INTERMEDIO, planes[2] = PREMIUM
+            for (int i = 0; i < planes.length; i++) {
+                System.out.println("    " + (i + 1) + ". " + planes[i].getDescripcion());
+                // getDescripcion(): devuelve "Plan Basico", "Plan Intermedio", "Plan Premium"
+            }
+
+            System.out.print("  Opcion (1-" + planes.length + "): ");
+            int opcion = leerEntero(scanner);
+
+            // Validar que esté dentro del rango (1 a cantidad de planes)
+            if (opcion >= 1 && opcion <= planes.length) {
+                // opcion - 1: convertimos del número humano (1,2,3) al índice del array (0,1,2)
+                // .name(): convierte el enum al texto "BASICO", "INTERMEDIO" o "PREMIUM"
+                return planes[opcion - 1].name();
+            }
+
+            // Si llega acá, la opción era inválida → vuelve a mostrar el menú
+            System.out.println("  [X] Opcion invalida. Elija entre 1 y " + planes.length + ".");
         }
     }
 
