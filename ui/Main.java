@@ -10,9 +10,10 @@ package ui;
 // Importamos Gimnasio desde el paquete "service"
 // Sin este import, Java no sabría qué es "Gimnasio".
 import service.Gimnasio;
-import model.Plan; // Plan: el enum que define los planes válidos del gimnasio
+import model.Plan;
+import persistence.ArchivoManager; // ArchivoManager: backup y estadísticas al cerrar
 
-import java.util.Scanner; // Scanner (escaner): permite leer datos del teclado
+import java.util.Scanner;
 
 // ============================================================
 // CLASE: Main
@@ -136,7 +137,22 @@ public class Main {
                     menuIngresoDni(scanner, gimnasio);
                     break;
 
+                case 13: // ESTADISTICAS GUARDADAS
+                    ArchivoManager.mostrarEstadisticasGuardadas();
+                    break;
+
                 case 0: // SALIR
+                    // Antes de cerrar: guardar estadísticas y hacer backup automático
+                    System.out.println("  [i] Guardando estadisticas...");
+                    ArchivoManager.guardarEstadisticas(
+                        gimnasio.cantidadTotalSocios(),
+                        gimnasio.contarMorosos(),
+                        gimnasio.calcularIngresosMesActual(),
+                        gimnasio.getTotalIngresos()
+                    );
+                    System.out.println("  [i] Realizando backup automatico...");
+                    ArchivoManager.backupAutomatico();
+                    ArchivoManager.limpiarBackupsAntiguos(30); // borrar backups de más de 30 días
                     System.out.println("\n  +----------------------------------+");
                     System.out.println("  |  Hasta luego! Buena jornada!    |");
                     System.out.println("  +----------------------------------+\n");
@@ -179,6 +195,7 @@ public class Main {
         System.out.println("  |  ---  MODULOS AVANZADOS  ---        |");
         System.out.println("  |  11. Modulo de Cuotas               |");
         System.out.println("  |  12. Modulo de Ingresos por DNI     |");
+        System.out.println("  |  13. Ver estadisticas guardadas     |");
         System.out.println("  |  0.  Salir                          |");
         System.out.println("  +-------------------------------------+");
     }

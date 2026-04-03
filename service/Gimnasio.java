@@ -10,12 +10,11 @@ package service;
 // Como hacer "usar" en PSeInt para incluir una librería.
 // Sin este import, Java no sabría qué es "Socio".
 import model.Socio;
-import model.Plan;           // Plan: el enum que reemplaza al String "BASICO"/"INTERMEDIO"/"PREMIUM"
-import model.RegistroCuota;  // RegistroCuota: registro detallado de cada pago de cuota
+import model.Plan;            // Plan: el enum que reemplaza al String "BASICO"/"INTERMEDIO"/"PREMIUM"
+import model.RegistroCuota;   // RegistroCuota: registro detallado de cada pago de cuota
 import model.RegistroIngreso; // RegistroIngreso: registro de cada visita al gimnasio por DNI
-import persistence.GestorCSV;
-import persistence.GestorCuotasCSV;   // GestorCuotasCSV: maneja el archivo cuotas.csv
-import persistence.GestorIngresosCSV; // GestorIngresosCSV: maneja el archivo ingresos.csv
+import persistence.ArchivoManager; // ArchivoManager: punto central de toda la persistencia
+import persistence.GestorCSV;      // GestorCSV: solo se usa para obtenerMaxId()
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -57,15 +56,16 @@ public class Gimnasio {
     // ----------------------------------------------------------
 
     public Gimnasio() {
-        // Cargamos socios desde socios.csv
-        socios = GestorCSV.cargar();
+        // ArchivoManager verifica y muestra qué archivos existen al arrancar
+        ArchivoManager.iniciarSistema();
+
+        // Cargamos los datos usando ArchivoManager como punto central
+        socios   = ArchivoManager.cargarSocios();
+        cuotas   = ArchivoManager.cargarCuotas();
+        ingresos = ArchivoManager.cargarIngresos();
+
+        // GestorCSV.obtenerMaxId() sigue siendo necesario para calcular el próximo ID
         contadorId = GestorCSV.obtenerMaxId(socios) + 1;
-
-        // Cargamos historial de cuotas desde cuotas.csv
-        cuotas = GestorCuotasCSV.cargar();
-
-        // Cargamos historial de ingresos desde ingresos.csv
-        ingresos = GestorIngresosCSV.cargar();
 
         System.out.println("  [i] Sistema listo. Socios: " + socios.size()
             + " | Cuotas: " + cuotas.size()
@@ -91,7 +91,7 @@ public class Gimnasio {
         Socio nuevoSocio = new Socio(contadorId, dni, nombre, edad, plan.name());
         socios.add(nuevoSocio);
         contadorId++;
-        GestorCSV.guardar(socios);
+        ArchivoManager.guardarSocios(socios);
         System.out.println("  [OK] Socio registrado con ID: " + nuevoSocio.getId() + " | DNI: " + dni);
     }
 
@@ -144,7 +144,7 @@ public class Gimnasio {
         }
         String anterior = socio.getNombre();
         socio.setNombre(nuevoNombre);
-        GestorCSV.guardar(socios);
+        ArchivoManager.guardarSocios(socios);
         System.out.println("  [OK] Nombre actualizado: " + anterior + " -> " + nuevoNombre);
     }
 
@@ -159,7 +159,7 @@ public class Gimnasio {
             return;
         }
         socio.setEdad(nuevaEdad);
-        GestorCSV.guardar(socios);
+        ArchivoManager.guardarSocios(socios);
         System.out.println("  [OK] Edad actualizada a: " + nuevaEdad + " anos.");
     }
 
@@ -176,7 +176,7 @@ public class Gimnasio {
         }
         String anterior = socio.getPlan().name();
         socio.setPlan(nuevoPlan.name());
-        GestorCSV.guardar(socios);
+        ArchivoManager.guardarSocios(socios);
         System.out.println("  [OK] Plan actualizado: " + anterior + " -> " + nuevoPlan.name());
         System.out.println("  [OK] Rutina actualizada automaticamente.");
     }
@@ -193,7 +193,7 @@ public class Gimnasio {
         }
         // .remove(objeto): elimina ese objeto de la lista. La lista se reorganiza sola.
         socios.remove(socio);
-        GestorCSV.guardar(socios);
+        ArchivoManager.guardarSocios(socios);
         System.out.println("  [OK] Socio '" + socio.getNombre() + "' eliminado correctamente.");
     }
 
@@ -208,7 +208,7 @@ public class Gimnasio {
             return;
         }
         socio.incrementarAsistencia();
-        GestorCSV.guardar(socios);
+        ArchivoManager.guardarSocios(socios);
         System.out.println("  [OK] Asistencia registrada para '" + socio.getNombre()
                          + "'. Total de visitas: " + socio.getAsistencia());
     }
@@ -237,7 +237,7 @@ public class Gimnasio {
             return;
         }
         socio.setCuotaAlDia(estado);
-        GestorCSV.guardar(socios);
+        ArchivoManager.guardarSocios(socios);
         String texto = estado ? "AL DIA" : "PENDIENTE";
         System.out.println("  [OK] Cuota de '" + socio.getNombre() + "' marcada como: " + texto);
     }
@@ -374,8 +374,8 @@ public class Gimnasio {
         socio.setCuotaAlDia(true);
 
         // Persistimos ambos archivos: el estado del socio y el nuevo registro de cuota
-        GestorCSV.guardar(socios);
-        GestorCuotasCSV.guardar(cuotas);
+        ArchivoManager.guardarSocios(socios);
+        ArchivoManager.guardarCuotas(cuotas);
 
         System.out.println("\n  [OK] Pago registrado correctamente.");
         System.out.println("  " + "-".repeat(44));
@@ -425,7 +425,7 @@ public class Gimnasio {
             // ChronoUnit.DAYS.between(): calcula la diferencia en DÍAS entre dos fechas
             long diasVencida = ChronoUnit.DAYS.between(ultimaCuota.getProximoVencimiento(), LocalDate.now());
             socio.setCuotaAlDia(false); // auto-marcar como pendiente
-            GestorCSV.guardar(socios);
+            ArchivoManager.guardarSocios(socios);
             System.out.println("  [!!] CUOTA VENCIDA para: " + socio.getNombre());
             System.out.println("  Vencio el  : " + ultimaCuota.getProximoVencimiento().format(fmt));
             System.out.println("  Dias vencida: " + diasVencida + " dia(s)");
@@ -561,7 +561,7 @@ public class Gimnasio {
         cuotaObjetivo.setRecargo(cuotaObjetivo.getRecargo() + importeRecargo);
         cuotaObjetivo.setObservaciones("Recargo mora " + porcentaje + "%");
 
-        GestorCuotasCSV.guardar(cuotas);
+        ArchivoManager.guardarCuotas(cuotas);
         System.out.println("  [OK] Recargo aplicado a " + socio.getNombre());
         System.out.printf("  Porcentaje : %.0f%%%n", porcentaje);
         System.out.printf("  Recargo    : +$%.2f%n", importeRecargo);
@@ -608,7 +608,7 @@ public class Gimnasio {
         String obsActual = motivo == null || motivo.trim().isEmpty() ? "Descuento promo" : motivo.trim();
         cuotaObjetivo.setObservaciones(obsActual + " -" + porcentaje + "%");
 
-        GestorCuotasCSV.guardar(cuotas);
+        ArchivoManager.guardarCuotas(cuotas);
         System.out.println("  [OK] Descuento aplicado a " + socio.getNombre());
         System.out.printf("  Motivo     : %s%n", obsActual);
         System.out.printf("  Porcentaje : %.0f%%%n", porcentaje);
@@ -667,14 +667,14 @@ public class Gimnasio {
             // El saldo quedó en cero: cuota completamente saldada
             cuotaObjetivo.setEstado("PAGADO");
             socio.setCuotaAlDia(true);
-            GestorCSV.guardar(socios);
+            ArchivoManager.guardarSocios(socios);
             System.out.println("  [OK] Cuota saldada completamente.");
         } else {
             cuotaObjetivo.setEstado("PARCIAL");
             System.out.printf("  [OK] Pago parcial registrado. Saldo restante: $%.2f%n", nuevoSaldo);
         }
 
-        GestorCuotasCSV.guardar(cuotas);
+        ArchivoManager.guardarCuotas(cuotas);
     }
 
     // ----------------------------------------------------------
@@ -815,8 +815,8 @@ public class Gimnasio {
         socio.incrementarAsistencia();
 
         // Guardamos ambos archivos
-        GestorCSV.guardar(socios);
-        GestorIngresosCSV.guardar(ingresos);
+        ArchivoManager.guardarSocios(socios);
+        ArchivoManager.guardarIngresos(ingresos);
 
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
         System.out.println("  [OK] Bienvenido/a, " + socio.getNombre() + "!");
@@ -915,5 +915,52 @@ public class Gimnasio {
         } else {
             System.out.println("  [OK] Asistencia reciente. No hay ausencia prolongada.");
         }
+    }
+
+    // ==========================================================
+    // MÉTODOS AUXILIARES PARA ARCHIVO MANAGER
+    // ==========================================================
+
+    // ----------------------------------------------------------
+    // MÉTODO: contarMorosos()
+    // ----------------------------------------------------------
+    // Devuelve cuántos socios tienen la cuota pendiente.
+    // Lo usa Main para pasarle el dato a ArchivoManager.guardarEstadisticas().
+
+    public int contarMorosos() {
+        int morosos = 0;
+        for (Socio s : socios) {
+            if (!s.isCuotaAlDia()) morosos++;
+        }
+        return morosos;
+    }
+
+    // ----------------------------------------------------------
+    // MÉTODO: calcularIngresosMesActual()
+    // ----------------------------------------------------------
+    // Suma todo lo cobrado en el mes actual (del campo montoPagado).
+    // Reutiliza la lógica existente de pagosMesActual() pero para
+    // todos los socios a la vez.
+
+    public double calcularIngresosMesActual() {
+        LocalDate hoy = LocalDate.now();
+        double total = 0;
+        for (RegistroCuota c : cuotas) {
+            if (c.getFechaPago().getMonth() == hoy.getMonth()
+                && c.getFechaPago().getYear() == hoy.getYear()
+                && !c.getEstado().equals("PENDIENTE")) {
+                total += c.getMontoPagado();
+            }
+        }
+        return total;
+    }
+
+    // ----------------------------------------------------------
+    // MÉTODO: getTotalIngresos()
+    // ----------------------------------------------------------
+    // Devuelve la cantidad total de visitas registradas.
+
+    public int getTotalIngresos() {
+        return ingresos.size();
     }
 }
