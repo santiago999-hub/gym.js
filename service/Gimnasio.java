@@ -516,6 +516,274 @@ public class Gimnasio {
         System.out.println("  Total morosos: " + morosos.size() + " socio(s)\n");
     }
 
+    // ----------------------------------------------------------
+    // MÉTODO: aplicarRecargoPorMora
+    // ----------------------------------------------------------
+    // ¿Para qué sirve?
+    //   Cuando un socio llega tarde a pagar, se le aplica un recargo
+    //   (un porcentaje extra sobre la cuota base). Este método busca
+    //   el registro de cuota más reciente del socio y le suma el recargo.
+    //
+    // ¿Cómo funciona el cálculo?
+    //   porcentaje = 10 → recargo = monto_base * 10 / 100
+    //   Si la cuota era $5000 y el recargo es 10% → se suma $500
+
+    public void aplicarRecargoPorMora(String dni, double porcentaje) {
+        Socio socio = buscarPorDni(dni);
+        if (socio == null) {
+            System.out.println("  [X] No se encontro ningun socio con DNI: " + dni);
+            return;
+        }
+        if (porcentaje <= 0 || porcentaje > 100) {
+            System.out.println("  [X] Porcentaje invalido. Debe estar entre 1 y 100.");
+            return;
+        }
+
+        // Buscar la cuota pendiente/vencida más reciente del socio
+        RegistroCuota cuotaObjetivo = null;
+        for (RegistroCuota c : cuotas) {
+            if (c.getDni().equals(dni) && !c.getEstado().equals("PAGADO")) {
+                if (cuotaObjetivo == null
+                    || c.getFechaPago().isAfter(cuotaObjetivo.getFechaPago())) {
+                    cuotaObjetivo = c;
+                }
+            }
+        }
+
+        if (cuotaObjetivo == null) {
+            System.out.println("  [!] " + socio.getNombre() + " no tiene cuotas pendientes.");
+            System.out.println("  Solo se puede aplicar recargo sobre cuotas PENDIENTES o PARCIALES.");
+            return;
+        }
+
+        // Calcular el importe del recargo: monto_base * porcentaje / 100
+        double importeRecargo = cuotaObjetivo.getMonto() * porcentaje / 100.0;
+        cuotaObjetivo.setRecargo(cuotaObjetivo.getRecargo() + importeRecargo);
+        cuotaObjetivo.setObservaciones("Recargo mora " + porcentaje + "%");
+
+        GestorCuotasCSV.guardar(cuotas);
+        System.out.println("  [OK] Recargo aplicado a " + socio.getNombre());
+        System.out.printf("  Porcentaje : %.0f%%%n", porcentaje);
+        System.out.printf("  Recargo    : +$%.2f%n", importeRecargo);
+        System.out.printf("  Nuevo total: $%.2f%n", cuotaObjetivo.montoTotal());
+    }
+
+    // ----------------------------------------------------------
+    // MÉTODO: aplicarDescuento
+    // ----------------------------------------------------------
+    // ¿Para qué sirve?
+    //   Aplica un descuento promocional sobre la cuota más reciente
+    //   (ya sea pendiente o incluso la última pagada, para el próximo pago).
+    //   Util para: socios referidores, aniversario del gimnasio, etc.
+
+    public void aplicarDescuento(String dni, double porcentaje, String motivo) {
+        Socio socio = buscarPorDni(dni);
+        if (socio == null) {
+            System.out.println("  [X] No se encontro ningun socio con DNI: " + dni);
+            return;
+        }
+        if (porcentaje <= 0 || porcentaje > 100) {
+            System.out.println("  [X] Porcentaje invalido. Debe estar entre 1 y 100.");
+            return;
+        }
+
+        // Buscar la cuota más reciente (sea cual sea su estado)
+        RegistroCuota cuotaObjetivo = null;
+        for (RegistroCuota c : cuotas) {
+            if (c.getDni().equals(dni)) {
+                if (cuotaObjetivo == null
+                    || c.getFechaPago().isAfter(cuotaObjetivo.getFechaPago())) {
+                    cuotaObjetivo = c;
+                }
+            }
+        }
+
+        if (cuotaObjetivo == null) {
+            System.out.println("  [!] " + socio.getNombre() + " no tiene cuotas registradas.");
+            return;
+        }
+
+        double importeDescuento = cuotaObjetivo.getMonto() * porcentaje / 100.0;
+        cuotaObjetivo.setDescuento(cuotaObjetivo.getDescuento() + importeDescuento);
+        String obsActual = motivo == null || motivo.trim().isEmpty() ? "Descuento promo" : motivo.trim();
+        cuotaObjetivo.setObservaciones(obsActual + " -" + porcentaje + "%");
+
+        GestorCuotasCSV.guardar(cuotas);
+        System.out.println("  [OK] Descuento aplicado a " + socio.getNombre());
+        System.out.printf("  Motivo     : %s%n", obsActual);
+        System.out.printf("  Porcentaje : %.0f%%%n", porcentaje);
+        System.out.printf("  Descuento  : -$%.2f%n", importeDescuento);
+        System.out.printf("  Nuevo total: $%.2f%n", cuotaObjetivo.montoTotal());
+    }
+
+    // ----------------------------------------------------------
+    // MÉTODO: registrarPagoParcial
+    // ----------------------------------------------------------
+    // ¿Para qué sirve?
+    //   El socio paga solo UNA PARTE de lo que debe.
+    //   El sistema registra lo abonado y calcula el saldo pendiente.
+    //   Si el saldo queda en 0, marca la cuota como PAGADO.
+
+    public void registrarPagoParcial(String dni, double montoPagado) {
+        Socio socio = buscarPorDni(dni);
+        if (socio == null) {
+            System.out.println("  [X] No se encontro ningun socio con DNI: " + dni);
+            return;
+        }
+        if (montoPagado <= 0) {
+            System.out.println("  [X] El monto debe ser mayor a cero.");
+            return;
+        }
+
+        // Buscar la cuota pendiente o parcial más reciente
+        RegistroCuota cuotaObjetivo = null;
+        for (RegistroCuota c : cuotas) {
+            if (c.getDni().equals(dni) && !c.getEstado().equals("PAGADO")) {
+                if (cuotaObjetivo == null
+                    || c.getFechaPago().isAfter(cuotaObjetivo.getFechaPago())) {
+                    cuotaObjetivo = c;
+                }
+            }
+        }
+
+        if (cuotaObjetivo == null) {
+            System.out.println("  [!] " + socio.getNombre() + " no tiene cuotas pendientes.");
+            return;
+        }
+
+        double saldoAnterior = cuotaObjetivo.saldoPendiente();
+        if (montoPagado > saldoAnterior) {
+            System.out.printf("  [X] El pago ($%.2f) supera el saldo pendiente ($%.2f).%n",
+                              montoPagado, saldoAnterior);
+            return;
+        }
+
+        // Acumulamos lo pagado y recalculamos el estado
+        double nuevoMontoPagado = cuotaObjetivo.getMontoPagado() + montoPagado;
+        cuotaObjetivo.setMontoPagado(nuevoMontoPagado);
+
+        double nuevoSaldo = cuotaObjetivo.saldoPendiente();
+        if (nuevoSaldo <= 0.01) {
+            // El saldo quedó en cero: cuota completamente saldada
+            cuotaObjetivo.setEstado("PAGADO");
+            socio.setCuotaAlDia(true);
+            GestorCSV.guardar(socios);
+            System.out.println("  [OK] Cuota saldada completamente.");
+        } else {
+            cuotaObjetivo.setEstado("PARCIAL");
+            System.out.printf("  [OK] Pago parcial registrado. Saldo restante: $%.2f%n", nuevoSaldo);
+        }
+
+        GestorCuotasCSV.guardar(cuotas);
+    }
+
+    // ----------------------------------------------------------
+    // MÉTODO: mostrarDashboardFinanciero
+    // ----------------------------------------------------------
+    // ¿Para qué sirve?
+    //   Muestra un resumen ejecutivo de las métricas financieras:
+    //     - Ingresos del día de hoy
+    //     - Ingresos del mes actual
+    //     - Deuda total acumulada (saldos pendientes de todos los socios)
+    //     - Cantidad de morosos activos
+    //     - Ranking de clientes premium (que más pagaron)
+
+    public void mostrarDashboardFinanciero() {
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        LocalDate hoy = LocalDate.now();
+
+        // --- INGRESOS DEL DÍA ---
+        // Sumar todos los montoPagado de cuotas pagadas/parciales HOY
+        double ingresosHoy = 0;
+        for (RegistroCuota c : cuotas) {
+            if (c.getFechaPago().equals(hoy)
+                && !c.getEstado().equals("PENDIENTE")) {
+                ingresosHoy += c.getMontoPagado();
+            }
+        }
+
+        // --- INGRESOS DEL MES ACTUAL ---
+        // Mismo criterio pero filtrando por mes y año actuales
+        double ingresosMes = 0;
+        for (RegistroCuota c : cuotas) {
+            if (c.getFechaPago().getMonth() == hoy.getMonth()
+                && c.getFechaPago().getYear() == hoy.getYear()
+                && !c.getEstado().equals("PENDIENTE")) {
+                ingresosMes += c.getMontoPagado();
+            }
+        }
+
+        // --- DEUDA TOTAL ---
+        // Suma de todos los saldos pendientes de todos los socios
+        double deudaTotal = 0;
+        for (RegistroCuota c : cuotas) {
+            if (!c.getEstado().equals("PAGADO")) {
+                deudaTotal += c.saldoPendiente();
+            }
+        }
+
+        // --- MOROSOS ACTIVOS ---
+        int morosos = 0;
+        for (Socio s : socios) {
+            if (!s.isCuotaAlDia()) morosos++;
+        }
+
+        // --- RANKING CLIENTES PREMIUM (more pagaron en el mes) ---
+        // Usamos un ArrayList de socios ordenado por lo que pagaron este mes
+        ArrayList<Socio> sociosCopia = new ArrayList<>(socios);
+        sociosCopia.sort((a, b) -> {
+            double pagoA = pagosMesActual(a.getDni());
+            double pagoB = pagosMesActual(b.getDni());
+            return Double.compare(pagoB, pagoA); // descendente: mayor primero
+        });
+
+        // === MOSTRAR DASHBOARD ===
+        System.out.println("\n  ╔══════════════════════════════════════════╗");
+        System.out.println("  ║       DASHBOARD FINANCIERO               ║");
+        System.out.println("  ╚══════════════════════════════════════════╝");
+        System.out.println("  Fecha        : " + hoy.format(fmt));
+        System.out.printf("  Ingresos hoy : $%.2f%n", ingresosHoy);
+        System.out.printf("  Ingresos mes : $%.2f%n", ingresosMes);
+        System.out.printf("  Deuda total  : $%.2f%n", deudaTotal);
+        System.out.println("  Morosos      : " + morosos + " socio(s)");
+        System.out.println("  Total socios : " + socios.size());
+        System.out.println();
+
+        System.out.println("  --- TOP PAGADORES DEL MES ---");
+        System.out.printf("  %-22s %-12s %-10s%n", "NOMBRE", "DNI", "PAGADO");
+        System.out.println("  " + "-".repeat(48));
+        int top = Math.min(5, sociosCopia.size()); // mostrar hasta 5
+        for (int i = 0; i < top; i++) {
+            Socio s = sociosCopia.get(i);
+            double pagado = pagosMesActual(s.getDni());
+            if (pagado > 0) {
+                System.out.printf("  %-22s %-12s $%-10.2f%n",
+                    s.getNombre(), s.getDni(), pagado);
+            }
+        }
+        System.out.println("  " + "-".repeat(48) + "\n");
+    }
+
+    // ----------------------------------------------------------
+    // MÉTODO PRIVADO: pagosMesActual(dni)
+    // ----------------------------------------------------------
+    // Calcula cuánto pagó un socio en el mes actual.
+    // Es "private" porque es solo un auxiliar interno del dashboard.
+
+    private double pagosMesActual(String dni) {
+        LocalDate hoy = LocalDate.now();
+        double total = 0;
+        for (RegistroCuota c : cuotas) {
+            if (c.getDni().equals(dni)
+                && c.getFechaPago().getMonth() == hoy.getMonth()
+                && c.getFechaPago().getYear() == hoy.getYear()
+                && !c.getEstado().equals("PENDIENTE")) {
+                total += c.getMontoPagado();
+            }
+        }
+        return total;
+    }
+
     // ==========================================================
     // MÓDULO 2: INGRESOS — control de visitas por DNI
     // ==========================================================

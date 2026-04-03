@@ -2,56 +2,61 @@
 // PAQUETE: model (modelo)
 // ============================================================
 // RegistroCuota representa el comprobante detallado de un pago
-// de cuota. Cada vez que un socio paga, se crea un objeto de
-// esta clase con toda la información del pago.
+// de cuota. Versión 2: incluye recargos por mora, descuentos
+// promocionales y soporte de pagos parciales.
 //
-// ¿Por qué una clase aparte?
-//   Un simple "true/false" (cuotaAlDia en Socio) no basta para
-//   un sistema real. Necesitamos saber: ¿cuándo pagó? ¿cuánto?
-//   ¿cómo? ¿cuándo vence el próximo pago? Esta clase guarda todo.
+// CAMPOS NUEVOS vs versión anterior:
+//   recargo      → importe adicional por mora (ej: 10% de la cuota)
+//   descuento    → importe reducido por promo (ej: 15% de descuento)
+//   montoPagado  → lo que realmente abonó el socio (puede ser parcial)
+//   tipo         → "MENSUAL", "ANUAL" o "PARCIAL"
 // ============================================================
 
 package model;
 
-import java.time.LocalDate;                        // LocalDate (fecha local): solo día/mes/año, sin hora
-import java.time.format.DateTimeFormatter;         // DateTimeFormatter: formatea fechas a texto legible
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 public class RegistroCuota {
 
     // ----------------------------------------------------------
-    // ATRIBUTOS (Attributes) — datos de cada registro de cuota
+    // ATRIBUTOS
     // ----------------------------------------------------------
 
-    private String    dni;                 // DNI (documento) del socio que pagó
-    private String    nombreSocio;         // Nombre del socio (para mostrar sin buscar en la lista)
-    private LocalDate fechaPago;           // Fecha en que se realizó el pago
-    private double    monto;              // Importe cobrado en la cuota (ej: 5000.00)
-    private String    metodoPago;         // "EFECTIVO", "TRANSFERENCIA" o "TARJETA"
-    private String    estado;             // "PAGADO" o "PENDIENTE"
-    private LocalDate proximoVencimiento; // Fecha en que vence el próximo pago
-    private String    observaciones;      // Notas adicionales opcionales del operador
+    private String    dni;
+    private String    nombreSocio;
+    private LocalDate fechaPago;
+    private double    monto;          // Monto BASE de la cuota (sin recargo ni descuento)
+    private double    recargo;        // Importe extra por mora: ej. 500.00 (no porcentaje, sino el valor ya calculado)
+    private double    descuento;      // Importe descontado: ej. 750.00
+    private double    montoPagado;    // Lo que realmente abonó: puede ser menor que monto+recargo-descuento
+    private String    metodoPago;     // "EFECTIVO", "TRANSFERENCIA" o "TARJETA"
+    private String    estado;         // "PAGADO", "PARCIAL" o "PENDIENTE"
+    private LocalDate proximoVencimiento;
+    private String    tipo;           // "MENSUAL", "ANUAL" o "PARCIAL"
+    private String    observaciones;
 
-    // DateTimeFormatter: convierte fecha a texto con formato "15/04/2026"
     private static final DateTimeFormatter FORMATO_FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     // ----------------------------------------------------------
-    // CONSTRUCTOR PRINCIPAL (para nuevos pagos registrados ahora)
+    // CONSTRUCTOR PRINCIPAL — para pagos completos nuevos
     // ----------------------------------------------------------
-    // Se ejecuta cuando el operador registra un pago NUEVO en el momento.
-    // El sistema calcula automáticamente:
-    //   → fechaPago         = hoy
-    //   → proximoVencimiento = hoy + 1 mes
+    // recargo y descuento = 0 por defecto (sin mora ni promo).
+    // montoPagado = monto (pago completo).
 
     public RegistroCuota(String dni, String nombreSocio, double monto,
                          String metodoPago, String observaciones) {
         this.dni                = dni;
         this.nombreSocio        = nombreSocio;
-        this.fechaPago          = LocalDate.now();               // LocalDate.now(): captura la fecha de hoy
+        this.fechaPago          = LocalDate.now();
         this.monto              = monto;
-        this.metodoPago         = metodoPago.toUpperCase();      // siempre en MAYÚSCULAS para consistencia
-        this.estado             = "PAGADO";                      // al registrar un pago, queda pagado
-        this.proximoVencimiento = LocalDate.now().plusMonths(1); // plusMonths(1): suma exactamente 1 mes
-        // Si no hay observaciones, usamos un texto por defecto legible
+        this.recargo            = 0.0;
+        this.descuento          = 0.0;
+        this.montoPagado        = monto;          // pago completo: abonó todo el monto base
+        this.metodoPago         = metodoPago.toUpperCase();
+        this.estado             = "PAGADO";
+        this.proximoVencimiento = LocalDate.now().plusMonths(1);
+        this.tipo               = "MENSUAL";
         this.observaciones = (observaciones == null || observaciones.trim().isEmpty())
                              ? "Sin observaciones" : observaciones.trim();
     }
@@ -59,76 +64,119 @@ public class RegistroCuota {
     // ----------------------------------------------------------
     // CONSTRUCTOR PARA RESTAURAR DESDE ARCHIVO CSV
     // ----------------------------------------------------------
-    // Se usa cuando GestorCuotasCSV.cargar() lee el archivo y recrea
-    // los objetos en memoria. Aquí ya tenemos TODOS los datos guardados.
+    // Recibe TODOS los campos ya parseados (leídos del archivo).
 
     public RegistroCuota(String dni, String nombreSocio, LocalDate fechaPago,
-                         double monto, String metodoPago, String estado,
-                         LocalDate proximoVencimiento, String observaciones) {
+                         double monto, double recargo, double descuento,
+                         double montoPagado, String metodoPago, String estado,
+                         LocalDate proximoVencimiento, String tipo, String observaciones) {
         this.dni                = dni;
         this.nombreSocio        = nombreSocio;
         this.fechaPago          = fechaPago;
         this.monto              = monto;
+        this.recargo            = recargo;
+        this.descuento          = descuento;
+        this.montoPagado        = montoPagado;
         this.metodoPago         = metodoPago;
         this.estado             = estado;
         this.proximoVencimiento = proximoVencimiento;
+        this.tipo               = tipo;
         this.observaciones      = observaciones;
     }
 
     // ----------------------------------------------------------
-    // GETTERS (Obtenedores) — la única forma de leer los datos
-    // desde fuera de esta clase (porque son private)
+    // GETTERS
     // ----------------------------------------------------------
 
     public String    getDni()                { return dni; }
     public String    getNombreSocio()        { return nombreSocio; }
     public LocalDate getFechaPago()          { return fechaPago; }
     public double    getMonto()              { return monto; }
+    public double    getRecargo()            { return recargo; }
+    public double    getDescuento()          { return descuento; }
+    public double    getMontoPagado()        { return montoPagado; }
     public String    getMetodoPago()         { return metodoPago; }
     public String    getEstado()             { return estado; }
     public LocalDate getProximoVencimiento() { return proximoVencimiento; }
+    public String    getTipo()               { return tipo; }
     public String    getObservaciones()      { return observaciones; }
+
+    // ----------------------------------------------------------
+    // SETTERS SELECTIVOS
+    // ----------------------------------------------------------
+    // Solo los campos que tienen sentido modificar después de creado.
+
+    public void setRecargo(double recargo)       { this.recargo = recargo; }
+    public void setDescuento(double descuento)   { this.descuento = descuento; }
+    public void setMontoPagado(double mp)        { this.montoPagado = mp; }
+    public void setEstado(String estado)         { this.estado = estado; }
+    public void setObservaciones(String obs)     { this.observaciones = obs; }
+
+    // ----------------------------------------------------------
+    // MÉTODO: montoTotal()
+    // ----------------------------------------------------------
+    // Calcula el importe final que el socio debería pagar:
+    //   monto base + recargo por mora - descuento promocional
+    // Es el TOTAL REAL de la deuda.
+
+    public double montoTotal() {
+        return monto + recargo - descuento;
+    }
+
+    // ----------------------------------------------------------
+    // MÉTODO: saldoPendiente()
+    // ----------------------------------------------------------
+    // Si hizo un pago parcial, ¿cuánto le falta pagar?
+    //   total - lo que ya entregó
+
+    public double saldoPendiente() {
+        return montoTotal() - montoPagado;
+    }
 
     // ----------------------------------------------------------
     // MÉTODO: estaVencida()
     // ----------------------------------------------------------
-    // Pregunta: ¿Ya pasó la fecha de vencimiento?
-    //   LocalDate.now()        = hoy
-    //   .isAfter(fecha)        = ¿hoy es DESPUÉS de esa fecha?
-    //   Si es true → cuota vencida (el socio debe pagar)
 
     public boolean estaVencida() {
         return LocalDate.now().isAfter(proximoVencimiento);
     }
 
     // ----------------------------------------------------------
-    // MÉTODO: toCsv() (To CSV = convertir a línea de archivo CSV)
+    // MÉTODO: toCsv()
     // ----------------------------------------------------------
-    // Genera la línea de texto que se guarda en cuotas.csv.
-    // LocalDate se guarda en formato ISO automáticamente: "2026-04-15"
-    // NOTA: el campo "observaciones" no puede contener comas (,)
-    //        porque se usa como separador en el archivo.
+    // Formato nuevo (12 columnas):
+    //   dni,nombreSocio,fechaPago,monto,recargo,descuento,montoPagado,
+    //   metodoPago,estado,proximoVencimiento,tipo,observaciones
 
     public String toCsv() {
         return dni + "," + nombreSocio + "," + fechaPago
-             + "," + monto + "," + metodoPago + "," + estado
-             + "," + proximoVencimiento + "," + observaciones;
+             + "," + monto + "," + recargo + "," + descuento
+             + "," + montoPagado + "," + metodoPago + "," + estado
+             + "," + proximoVencimiento + "," + tipo + "," + observaciones;
     }
 
     // ----------------------------------------------------------
-    // MÉTODO: toString() — texto legible para mostrar en consola
+    // MÉTODO: toString()
     // ----------------------------------------------------------
 
     @Override
     public String toString() {
-        // Operador ternario: si estaVencida() es true → "[VENCIDA]", si no → "[VIGENTE]"
         String vigencia = estaVencida() ? "[VENCIDA!!]" : "[VIGENTE]";
-        return "  Socio    : " + nombreSocio + " (DNI: " + dni + ")\n"
-             + "  Pago     : " + fechaPago.format(FORMATO_FECHA) + "\n"
-             + "  Monto    : $" + String.format("%.2f", monto) + "\n"
-             + "  Metodo   : " + metodoPago + "\n"
-             + "  Estado   : " + estado + "\n"
-             + "  Vence    : " + proximoVencimiento.format(FORMATO_FECHA) + "  " + vigencia + "\n"
-             + "  Obs.     : " + observaciones;
+        StringBuilder sb = new StringBuilder();
+        sb.append("  Socio    : ").append(nombreSocio).append(" (DNI: ").append(dni).append(")\n");
+        sb.append("  Tipo     : ").append(tipo).append("\n");
+        sb.append("  Pago     : ").append(fechaPago.format(FORMATO_FECHA)).append("\n");
+        sb.append("  Monto    : $").append(String.format("%.2f", monto)).append("\n");
+        if (recargo > 0)   sb.append("  Recargo  : +$").append(String.format("%.2f", recargo)).append(" (mora)\n");
+        if (descuento > 0) sb.append("  Descuento: -$").append(String.format("%.2f", descuento)).append(" (promo)\n");
+        sb.append("  Total    : $").append(String.format("%.2f", montoTotal())).append("\n");
+        sb.append("  Pagado   : $").append(String.format("%.2f", montoPagado));
+        if (saldoPendiente() > 0.01) sb.append("  [Saldo: $").append(String.format("%.2f", saldoPendiente())).append("]");
+        sb.append("\n");
+        sb.append("  Metodo   : ").append(metodoPago).append("\n");
+        sb.append("  Estado   : ").append(estado).append("\n");
+        sb.append("  Vence    : ").append(proximoVencimiento.format(FORMATO_FECHA)).append("  ").append(vigencia).append("\n");
+        sb.append("  Obs.     : ").append(observaciones);
+        return sb.toString();
     }
 }

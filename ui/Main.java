@@ -267,6 +267,10 @@ public class Main {
         System.out.println("  |  2. Verificar si cuota vencio       |");
         System.out.println("  |  3. Historial de pagos de un socio  |");
         System.out.println("  |  4. Listar socios morosos           |");
+        System.out.println("  |  5. Aplicar recargo por mora        |");
+        System.out.println("  |  6. Aplicar descuento promocional   |");
+        System.out.println("  |  7. Registrar pago parcial          |");
+        System.out.println("  |  8. Dashboard financiero            |");
         System.out.println("  +-------------------------------------+");
         System.out.print("  Opcion: ");
         int sub = leerEntero(scanner);
@@ -277,7 +281,6 @@ public class Main {
                 System.out.print("  DNI del socio: ");
                 String dniPago = scanner.nextLine();
                 System.out.print("  Monto de la cuota ($): ");
-                // leerDoble(): variante que lee un número decimal
                 double monto = leerDoble(scanner);
                 System.out.println("  Metodo de pago:");
                 System.out.println("    1. EFECTIVO");
@@ -314,6 +317,39 @@ public class Main {
 
             case 4: // LISTAR MOROSOS
                 gimnasio.listarSociosMorosos();
+                break;
+
+            case 5: // RECARGO POR MORA
+                System.out.println("\n  --- APLICAR RECARGO POR MORA ---");
+                System.out.print("  DNI del socio: ");
+                String dniRec = scanner.nextLine();
+                System.out.print("  Porcentaje de recargo (ej: 10): ");
+                double porcRec = leerDoble(scanner);
+                gimnasio.aplicarRecargoPorMora(dniRec, porcRec);
+                break;
+
+            case 6: // DESCUENTO PROMOCIONAL
+                System.out.println("\n  --- APLICAR DESCUENTO PROMOCIONAL ---");
+                System.out.print("  DNI del socio: ");
+                String dniDesc = scanner.nextLine();
+                System.out.print("  Porcentaje de descuento (ej: 15): ");
+                double porcDesc = leerDoble(scanner);
+                System.out.print("  Motivo (ej: Referido / Aniversario): ");
+                String motivo = scanner.nextLine();
+                gimnasio.aplicarDescuento(dniDesc, porcDesc, motivo);
+                break;
+
+            case 7: // PAGO PARCIAL
+                System.out.println("\n  --- REGISTRAR PAGO PARCIAL ---");
+                System.out.print("  DNI del socio: ");
+                String dniParc = scanner.nextLine();
+                System.out.print("  Monto a abonar ($): ");
+                double montoParc = leerDoble(scanner);
+                gimnasio.registrarPagoParcial(dniParc, montoParc);
+                break;
+
+            case 8: // DASHBOARD FINANCIERO
+                gimnasio.mostrarDashboardFinanciero();
                 break;
 
             default:
