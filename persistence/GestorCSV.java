@@ -45,9 +45,10 @@ public class GestorCSV {
     // Es equivalente a una constante en PSeInt: DEFINIR NOMBRE = valor
 
     private static final String ARCHIVO        = "socios.csv";
-    private static final String CABECERA       = "id,nombre,edad,plan,asistencia,cuotaAlDia";
+    private static final String CABECERA       = "id,dni,nombre,edad,plan,asistencia,cuotaAlDia";
     private static final String SEPARADOR      = ",";
-    private static final int    COLUMNAS_CSV   = 6; // Cuántos campos tiene cada fila
+    private static final int    COLUMNAS_CSV   = 7; // Formato nuevo: id,dni,nombre,edad,plan,asistencia,cuotaAlDia
+    private static final int    COLUMNAS_VIEJO = 6; // Formato antiguo (sin campo DNI): compatibilidad hacia atrás
 
     // ==========================================================
     // MÉTODO: guardar
@@ -69,14 +70,14 @@ public class GestorCSV {
             // Recorrer todos los socios y escribir una línea por cada uno
             for (Socio socio : socios) {
                 // Construimos la línea CSV uniendo los datos con el separador ","
-                // Nota: si el nombre tuviera una coma, habría que escaparla.
-                // Para este proyecto universitario usamos nombres simples.
+                // Ahora incluimos el campo DNI en segunda posición (después del ID)
                 String linea = socio.getId()
+                        + SEPARADOR + socio.getDni()
                         + SEPARADOR + socio.getNombre()
                         + SEPARADOR + socio.getEdad()
-                        + SEPARADOR + socio.getPlan().name() // .name() convierte Plan.PREMIUM → "PREMIUM"
+                        + SEPARADOR + socio.getPlan().name()
                         + SEPARADOR + socio.getAsistencia()
-                        + SEPARADOR + socio.isCuotaAlDia(); // true o false como texto
+                        + SEPARADOR + socio.isCuotaAlDia();
 
                 escritor.write(linea);
                 escritor.newLine();
@@ -104,40 +105,60 @@ public class GestorCSV {
             // .readLine() (leer línea): devuelve la siguiente línea del archivo,
             // o null cuando llega al final.
             // La primera línea es la cabecera, la salteamos con una lectura previa.
-            lector.readLine(); // Saltea la línea "id,nombre,edad,plan,asistencia,cuotaAlDia"
+            lector.readLine(); // Saltear la línea de cabecera
 
             // while (mientras): sigue leyendo mientras haya líneas en el archivo
             while ((linea = lector.readLine()) != null) {
 
                 // Ignorar líneas vacías o con solo espacios
-                if (linea.trim().isEmpty()) continue; // continue (continuar): va a la siguiente iteración
+                if (linea.trim().isEmpty()) continue;
 
-                // .split() (dividir): corta el String en partes usando el separador
-                // "1,Juan,25,PREMIUM,12,true".split(",") → ["1","Juan","25","PREMIUM","12","true"]
                 String[] partes = linea.split(SEPARADOR);
 
-                // Validación: si la línea no tiene exactamente 6 columnas, la saltea
-                if (partes.length != COLUMNAS_CSV) continue;
+                // Aceptamos tanto el formato NUEVO (7 columnas, con DNI)
+                // como el formato ANTIGUO (6 columnas, sin DNI).
+                // Esto garantiza COMPATIBILIDAD hacia atrás con archivos viejos.
+                if (partes.length != COLUMNAS_CSV && partes.length != COLUMNAS_VIEJO) continue;
 
-                // Convertir cada parte al tipo que corresponde:
-                // Integer.parseInt() (parsear a entero): convierte "25" → 25
-                // Boolean.parseBoolean() (parsear a booleano): convierte "true" → true
-                int     id          = Integer.parseInt(partes[0].trim());
-                String  nombre      = partes[1].trim();
-                int     edad        = Integer.parseInt(partes[2].trim());
-                String  plan        = partes[3].trim();
-                int     asistencia  = Integer.parseInt(partes[4].trim());
-                boolean cuotaAlDia  = Boolean.parseBoolean(partes[5].trim());
+                int     id;
+                String  dni;
+                String  nombre;
+                int     edad;
+                String  plan;
+                int     asistencia;
+                boolean cuotaAlDia;
 
-                // Creamos el objeto Socio usando el constructor
-                Socio socio = new Socio(id, nombre, edad, plan);
+                if (partes.length == COLUMNAS_VIEJO) {
+                    // === FORMATO ANTIGUO (sin DNI) ===
+                    // Columnas: id, nombre, edad, plan, asistencia, cuotaAlDia
+                    id         = Integer.parseInt(partes[0].trim());
+                    dni        = "SIN-DNI";  // Asignamos un DNI por defecto a socios anteriores
+                    nombre     = partes[1].trim();
+                    edad       = Integer.parseInt(partes[2].trim());
+                    plan       = partes[3].trim();
+                    asistencia = Integer.parseInt(partes[4].trim());
+                    cuotaAlDia = Boolean.parseBoolean(partes[5].trim());
+                } else {
+                    // === FORMATO NUEVO (con DNI en segunda posición) ===
+                    // Columnas: id, dni, nombre, edad, plan, asistencia, cuotaAlDia
+                    id         = Integer.parseInt(partes[0].trim());
+                    dni        = partes[1].trim();
+                    nombre     = partes[2].trim();
+                    edad       = Integer.parseInt(partes[3].trim());
+                    plan       = partes[4].trim();
+                    asistencia = Integer.parseInt(partes[5].trim());
+                    cuotaAlDia = Boolean.parseBoolean(partes[6].trim());
+                }
+
+                // Creamos el objeto Socio usando el constructor actualizado (con DNI)
+                Socio socio = new Socio(id, dni, nombre, edad, plan);
 
                 // El constructor inicializa asistencia en 0 y cuota en true.
                 // Necesitamos restaurar los valores reales del archivo:
                 for (int i = 0; i < asistencia; i++) {
-                    socio.incrementarAsistencia(); // Restauramos la asistencia real
+                    socio.incrementarAsistencia();
                 }
-                socio.setCuotaAlDia(cuotaAlDia); // Restauramos el estado de cuota real
+                socio.setCuotaAlDia(cuotaAlDia);
 
                 lista.add(socio);
             }

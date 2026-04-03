@@ -35,6 +35,7 @@ public class Socio {
     // La idea es proteger los datos de modificaciones accidentales.
 
     private int id;              // Número único que identifica al socio
+    private String dni;          // DNI (Documento Nacional de Identidad): identifica al socio en el mundo real
     private String nombre;       // Nombre completo del socio
     private int edad;            // Edad del socio en años
     private Plan plan;           // Plan contratado: ahora es de tipo Plan (enum), no String
@@ -49,11 +50,12 @@ public class Socio {
     // y los guarda dentro del objeto que se está creando.
     // "public" (público): cualquier clase puede crear un Socio.
 
-    public Socio(int id, String nombre, int edad, String planTexto) {
+    public Socio(int id, String dni, String nombre, int edad, String planTexto) {
         // "this" (este/este objeto): distingue el atributo del parámetro
         // cuando tienen el mismo nombre. this.nombre = el atributo,
         // nombre (sin this) = el parámetro recibido.
         this.id         = id;
+        this.dni        = (dni == null || dni.trim().isEmpty()) ? "SIN-DNI" : dni.trim();
         this.nombre     = nombre;
         this.edad       = edad;
         // Plan.desdeCadena(): convierte el String "BASICO" → Plan.BASICO
@@ -81,6 +83,12 @@ public class Socio {
     // --- ID ---
     public int getId() {
         return id; // return (retornar/devolver): devuelve el valor al que llamó el método
+    }
+
+    // --- DNI ---
+    // No hay setter de DNI: el documento de identidad no debería cambiar.
+    public String getDni() {
+        return dni;
     }
 
     // --- NOMBRE ---
@@ -164,6 +172,7 @@ public class Socio {
 
         return "╔══════════════════════════════════════════╗\n"
              + "  ID        : " + id                    + "\n"
+             + "  DNI       : " + dni                   + "\n"
              + "  Nombre    : " + nombre                + "\n"
              + "  Edad      : " + edad                  + " anos\n"
              + "  Plan      : " + plan.getDescripcion() + "\n" // plan.getDescripcion() → "Plan Premium"

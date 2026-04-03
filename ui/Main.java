@@ -61,14 +61,15 @@ public class Main {
 
                 case 1: // ALTA DE SOCIO
                     System.out.println("\n  --- ALTA DE SOCIO ---");
+                    System.out.print("  DNI (Documento Nacional de Identidad): ");
+                    String dniAlta = scanner.nextLine();
                     System.out.print("  Nombre: ");
                     String nombre = scanner.nextLine();
                     System.out.print("  Edad: ");
                     int edad = leerEntero(scanner);
                     // elegirPlan() muestra el submenu numerico y devuelve el nombre del plan
-                    // Los datos de nombre y edad NO se pierden si el usuario elige mal
                     String plan = elegirPlan(scanner);
-                    gimnasio.agregarSocio(nombre, edad, plan);
+                    gimnasio.agregarSocio(dniAlta, nombre, edad, plan);
                     break; // break (salir): evita que Java siga ejecutando los siguientes casos
 
                 case 2: // BUSCAR SOCIO POR ID
@@ -127,6 +128,14 @@ public class Main {
                     gimnasio.mostrarRankingPorAsistencia();
                     break;
 
+                case 11: // MÓDULO COMPLETO DE CUOTAS
+                    menuCuotasCompleto(scanner, gimnasio);
+                    break;
+
+                case 12: // MÓDULO DE INGRESOS POR DNI
+                    menuIngresoDni(scanner, gimnasio);
+                    break;
+
                 case 0: // SALIR
                     System.out.println("\n  +----------------------------------+");
                     System.out.println("  |  Hasta luego! Buena jornada!    |");
@@ -161,12 +170,15 @@ public class Main {
         System.out.println("  |  2.  Buscar socio por ID            |");
         System.out.println("  |  3.  Modificar socio                |");
         System.out.println("  |  4.  Eliminar socio                 |");
-        System.out.println("  |  5.  Registrar asistencia           |");
-        System.out.println("  |  6.  Controlar cuota                |");
+        System.out.println("  |  5.  Registrar asistencia (por ID)  |");
+        System.out.println("  |  6.  Controlar cuota (basico)       |");
         System.out.println("  |  7.  Ver todos los socios           |");
         System.out.println("  |  8.  Ver rutina de socio            |");
         System.out.println("  |  9.  Cantidad total de socios       |");
         System.out.println("  |  10. Ranking por asistencia         |");
+        System.out.println("  |  ---  MODULOS AVANZADOS  ---        |");
+        System.out.println("  |  11. Modulo de Cuotas               |");
+        System.out.println("  |  12. Modulo de Ingresos por DNI     |");
         System.out.println("  |  0.  Salir                          |");
         System.out.println("  +-------------------------------------+");
     }
@@ -236,6 +248,143 @@ public class Main {
             default:
                 System.out.println("  [X] Opcion invalida.");
         }
+    }
+
+    // ==========================================================
+    // MÉTODO: menuCuotasCompleto (submenú del Módulo de Cuotas)
+    // ==========================================================
+    // ¿Por qué existe este método?
+    //   Agrupa todas las operaciones de cuotas en un submenú propio.
+    //   El menú principal llama a este método y ESTE se encarga de
+    //   mostrar opciones, leer la elección y llamar al método correcto
+    //   en Gimnasio. El menú principal queda limpio y sin crecer de más.
+
+    private static void menuCuotasCompleto(Scanner scanner, Gimnasio gimnasio) {
+        System.out.println("\n  +-------------------------------------+");
+        System.out.println("  |       MODULO DE CUOTAS              |");
+        System.out.println("  +-------------------------------------+");
+        System.out.println("  |  1. Registrar pago de cuota         |");
+        System.out.println("  |  2. Verificar si cuota vencio       |");
+        System.out.println("  |  3. Historial de pagos de un socio  |");
+        System.out.println("  |  4. Listar socios morosos           |");
+        System.out.println("  +-------------------------------------+");
+        System.out.print("  Opcion: ");
+        int sub = leerEntero(scanner);
+
+        switch (sub) {
+            case 1: // REGISTRAR PAGO
+                System.out.println("\n  --- REGISTRAR PAGO DE CUOTA ---");
+                System.out.print("  DNI del socio: ");
+                String dniPago = scanner.nextLine();
+                System.out.print("  Monto de la cuota ($): ");
+                // leerDoble(): variante que lee un número decimal
+                double monto = leerDoble(scanner);
+                System.out.println("  Metodo de pago:");
+                System.out.println("    1. EFECTIVO");
+                System.out.println("    2. TRANSFERENCIA");
+                System.out.println("    3. TARJETA");
+                System.out.print("  Opcion: ");
+                int opMetodo = leerEntero(scanner);
+                String metodo;
+                switch (opMetodo) {
+                    case 1:  metodo = "EFECTIVO";       break;
+                    case 2:  metodo = "TRANSFERENCIA";  break;
+                    case 3:  metodo = "TARJETA";        break;
+                    default: metodo = "EFECTIVO";
+                             System.out.println("  Opcion invalida. Se usara EFECTIVO.");
+                }
+                System.out.print("  Observaciones (Enter para omitir): ");
+                String obs = scanner.nextLine();
+                gimnasio.registrarPagoCuota(dniPago, monto, metodo, obs);
+                break;
+
+            case 2: // VERIFICAR VENCIMIENTO
+                System.out.println("\n  --- VERIFICAR CUOTA ---");
+                System.out.print("  DNI del socio: ");
+                String dniVerif = scanner.nextLine();
+                gimnasio.verificarCuotaVencida(dniVerif);
+                break;
+
+            case 3: // HISTORIAL DE PAGOS
+                System.out.println("\n  --- HISTORIAL DE PAGOS ---");
+                System.out.print("  DNI del socio: ");
+                String dniHist = scanner.nextLine();
+                gimnasio.mostrarHistorialPagos(dniHist);
+                break;
+
+            case 4: // LISTAR MOROSOS
+                gimnasio.listarSociosMorosos();
+                break;
+
+            default:
+                System.out.println("  [X] Opcion invalida.");
+        }
+    }
+
+    // ==========================================================
+    // MÉTODO: menuIngresoDni (submenú del Módulo de Ingresos)
+    // ==========================================================
+    // Controla el acceso al gimnasio por DNI y el historial de visitas.
+
+    private static void menuIngresoDni(Scanner scanner, Gimnasio gimnasio) {
+        System.out.println("\n  +-------------------------------------+");
+        System.out.println("  |    MODULO DE INGRESOS POR DNI       |");
+        System.out.println("  +-------------------------------------+");
+        System.out.println("  |  1. Registrar ingreso por DNI       |");
+        System.out.println("  |  2. Historial de ingresos           |");
+        System.out.println("  |  3. Verificar ausencia prolongada   |");
+        System.out.println("  |  4. Ranking de asistencia           |");
+        System.out.println("  +-------------------------------------+");
+        System.out.print("  Opcion: ");
+        int sub = leerEntero(scanner);
+
+        switch (sub) {
+            case 1: // REGISTRAR INGRESO
+                System.out.println("\n  --- INGRESO AL GIMNASIO ---");
+                System.out.print("  Ingrese su DNI: ");
+                String dniIngreso = scanner.nextLine();
+                gimnasio.registrarIngresoPorDni(dniIngreso);
+                break;
+
+            case 2: // HISTORIAL DE INGRESOS
+                System.out.println("\n  --- HISTORIAL DE INGRESOS ---");
+                System.out.print("  DNI del socio: ");
+                String dniHistIng = scanner.nextLine();
+                gimnasio.mostrarHistorialIngresos(dniHistIng);
+                break;
+
+            case 3: // VERIFICAR AUSENCIA
+                System.out.println("\n  --- VERIFICAR AUSENCIA ---");
+                System.out.print("  DNI del socio: ");
+                String dniAusencia = scanner.nextLine();
+                gimnasio.verificarAusencia(dniAusencia);
+                break;
+
+            case 4: // RANKING DE ASISTENCIA
+                gimnasio.mostrarRankingPorAsistencia();
+                break;
+
+            default:
+                System.out.println("  [X] Opcion invalida.");
+        }
+    }
+
+    // ==========================================================
+    // MÉTODO: leerDoble (con validación)
+    // ==========================================================
+    // Similar a leerEntero() pero lee un número DECIMAL (double).
+    // Evita que el programa se rompa si el usuario escribe letras.
+    // "double" (doble precisión): tipo de dato para números con coma decimal.
+
+    private static double leerDoble(Scanner scanner) {
+        // hasNextDouble() (tiene un numero decimal?): devuelve true si lo siguiente es un decimal
+        while (!scanner.hasNextDouble()) {
+            System.out.print("  [X] Ingrese un numero valido (ej: 5000.00): ");
+            scanner.next(); // descarta el texto inválido
+        }
+        double valor = scanner.nextDouble();
+        scanner.nextLine(); // limpia el buffer
+        return valor;
     }
 
     // ==========================================================
