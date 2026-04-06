@@ -539,16 +539,7 @@ public class Gimnasio {
             return;
         }
 
-        // Buscar la cuota pendiente/vencida más reciente del socio
-        RegistroCuota cuotaObjetivo = null;
-        for (RegistroCuota c : cuotas) {
-            if (c.getDni().equals(dni) && !c.getEstado().equals("PAGADO")) {
-                if (cuotaObjetivo == null
-                    || c.getFechaPago().isAfter(cuotaObjetivo.getFechaPago())) {
-                    cuotaObjetivo = c;
-                }
-            }
-        }
+        RegistroCuota cuotaObjetivo = buscarCuotaPendienteReciente(dni);
 
         if (cuotaObjetivo == null) {
             System.out.println("  [!] " + socio.getNombre() + " no tiene cuotas pendientes.");
@@ -635,16 +626,7 @@ public class Gimnasio {
             return;
         }
 
-        // Buscar la cuota pendiente o parcial más reciente
-        RegistroCuota cuotaObjetivo = null;
-        for (RegistroCuota c : cuotas) {
-            if (c.getDni().equals(dni) && !c.getEstado().equals("PAGADO")) {
-                if (cuotaObjetivo == null
-                    || c.getFechaPago().isAfter(cuotaObjetivo.getFechaPago())) {
-                    cuotaObjetivo = c;
-                }
-            }
-        }
+        RegistroCuota cuotaObjetivo = buscarCuotaPendienteReciente(dni);
 
         if (cuotaObjetivo == null) {
             System.out.println("  [!] " + socio.getNombre() + " no tiene cuotas pendientes.");
@@ -762,6 +744,27 @@ public class Gimnasio {
             }
         }
         System.out.println("  " + "-".repeat(48) + "\n");
+    }
+
+    // ----------------------------------------------------------
+    // MÉTODO PRIVADO: buscarCuotaPendienteReciente(dni)
+    // ----------------------------------------------------------
+    // Busca la cuota PENDIENTE o PARCIAL más reciente de un socio.
+    // Es "private" porque es solo un auxiliar interno.
+    // Evita repetir el mismo bucle en aplicarRecargoPorMora(),
+    // aplicarDescuento() y registrarPagoParcial().
+
+    private RegistroCuota buscarCuotaPendienteReciente(String dni) {
+        RegistroCuota resultado = null;
+        for (RegistroCuota c : cuotas) {
+            if (c.getDni().equals(dni) && !c.getEstado().equals("PAGADO")) {
+                if (resultado == null
+                    || c.getFechaPago().isAfter(resultado.getFechaPago())) {
+                    resultado = c;
+                }
+            }
+        }
+        return resultado;
     }
 
     // ----------------------------------------------------------
